@@ -1,0 +1,14 @@
+library(tidyverse)
+
+hitters.2018 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Hitters 2018.csv")
+colnames(hitters.2018)[1] = "Name"
+contracts.2019 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Cot's 2019 arbitration salaries.csv")
+
+hitters.2017 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Hitters 2017.csv")
+colnames(hitters.2017)[1] = "Name"
+contracts.2018 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Cot's 2018 arbitration salaries.csv")
+
+arbitration.2018 = data.frame()
+arbitration.2018 = contracts.2018[, c("Player", "MLS", "Prev.WARP", "Career.WARP", "Prev.Salary", "New.Salary")]
+hitter.arbitration.2018 = cbind(arbitration.2018[which(hitters.2017$Name == contracts.2018$Player), -1], 
+                                hitters.2017[which(hitters.2017$Name == contracts.2018$Player)],) ##having issues here
