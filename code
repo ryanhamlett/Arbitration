@@ -1,14 +1,38 @@
 library(tidyverse)
 
-hitters.2018 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Hitters 2018.csv")
+hitters.2018 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Hitters 2018.csv") #2018 stats used to predict 2019 salary
 colnames(hitters.2018)[1] = "Name"
-contracts.2019 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Cot's 2019 arbitration salaries.csv")
+hitters.2018 = hitters.2018[c(which(hitters.2018$PA > 78)), ] #removing pitchers from the hitters database, could be done more clearly but this does the job
+hitters.2018 = hitters.2018[order(hitters.2018$Name),] #ordering data alphabetically to help match dataframes later
 
-hitters.2017 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Hitters 2017.csv")
+contracts.2019 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Cot's 2019 arbitration salaries.csv", na.strings = c("n/a", "")) #2019 salaries
+contracts.2019$Prev.WARP = as.numeric(as.character(contracts.2019$Prev.WARP)) #changing Prev WARP to numeric from factor
+contracts.2019 = contracts.2019[is.na(contracts.2019$New.Salary) == FALSE, ] #limiting data to players who received new contracts in arbitration
+contracts.2019$Prev.WARP[is.na(contracts.2019$Prev.WARP)] = 0 #NA means they didn't play, changing this to a 0 WARP
+contracts.2019 = cbind(contracts.2019, "WARP" = contracts.2019$Career.WARP - contracts.2019$Prev.WARP) #adding a WARP for current season to dataframe
+contracts.2019 = contracts.2019[order(contracts.2019$Player),] #ordering alphabetically to help match dataframes later
+
+hitters.2017 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Hitters 2017.csv") #2017 stats used to predict 2018 salary
+hitters.2017 = hitters.2017[c(which(hitters.2017$PA > 77)), ] #removing pitchers from hitters database
 colnames(hitters.2017)[1] = "Name"
-contracts.2018 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Cot's 2018 arbitration salaries.csv")
+hitters.2017 = hitters.2017[order(hitters.2017$Name),]
+
+
+contracts.2018 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Cot's 2018 arbitration salaries.csv", na.strings = c("n/a", ""))
+contracts.2018$Prev.WARP = as.numeric(as.character(contracts.2018$Prev.WARP))
+contracts.2018 = contracts.2018[is.na(contracts.2018$New.Salary) == FALSE, ]
+contracts.2018$Prev.WARP[is.na(contracts.2018$Prev.WARP)] = 0
+contracts.2018 = cbind(contracts.2018, "WARP" = contracts.2018$Career.WARP - contracts.2018$Prev.WARP)
+contracts.2018 = contracts.2018[order(contracts.2018$Player),]
 
 arbitration.2018 = data.frame()
-arbitration.2018 = contracts.2018[, c("Player", "MLS", "Prev.WARP", "Career.WARP", "Prev.Salary", "New.Salary")]
-hitter.arbitration.2018 = cbind(arbitration.2018[which(hitters.2017$Name == contracts.2018$Player), -1], 
-                                hitters.2017[which(hitters.2017$Name == contracts.2018$Player)],) ##having issues here
+arbitration.2018 = contracts.2018[, c("Player", "MLS", "Prev.WARP", "Career.WARP", "WARP", "Prev.Salary", "New.Salary")] #filtering out useful stats
+hitter.arbitration.2018 = cbind(arbitration.2018[which(as.character(arbitration.2018$Player) %in% as.character(hitters.2017$Name)), ], 
+                         hitters.2017[which(as.character(hitters.2017$Name) %in% as.character(arbitration.2018$Player)), -1]) #combining dataframes
+
+arbitration.2019 = data.frame()
+arbitration.2019 = contracts.2019[, c("Player", "MLS", "Prev.WARP", "Career.WARP", "WARP", "Prev.Salary", "New.Salary")] #filtering out useful stats
+hitter.arbitration.2019 = cbind(arbitration.2019[which(as.character(arbitration.2019$Player) %in% as.character(hitters.2018$Name)), ], 
+                                hitters.2018[which(as.character(hitters.2018$Name) %in% as.character(arbitration.2019$Player)), -1])
+
+hitter.arbitration = rbind(hitter.arbitration.2018, hitter.arbitration.2019) #final dataset of all arbitration eligible hitters for 2018/2019
