@@ -1,27 +1,42 @@
-library(tidyverse)
+#hitter data for the 2018 season (used in conjunction with contracts.2019)
 
 hitters.2018 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Hitters 2018.csv") #2018 stats used to predict 2019 salary
 colnames(hitters.2018)[1] = "Name"
-hitters.2018 = hitters.2018[c(which(hitters.2018$PA > 78)), ] #removing pitchers from the hitters database, could be done more clearly but this does the job
+hitters.2018 = subset(hitters.2018, PA > 78) #removing pitchers from the hitters database, could be done more clearly but this does the job
 hitters.2018 = hitters.2018[order(hitters.2018$Name),] #ordering data alphabetically to help match dataframes later
+
+#contract data from after the 2018 season and for upcoming 2019 season
 
 contracts.2019 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Cot's 2019 arbitration salaries.csv", na.strings = c("n/a", "")) #2019 salaries
 contracts.2019$Prev.WARP = as.numeric(as.character(contracts.2019$Prev.WARP)) #changing Prev WARP to numeric from factor
-contracts.2019 = contracts.2019[is.na(contracts.2019$New.Salary) == FALSE, ] #limiting data to players who received new contracts in arbitration
+contracts.2019 = contracts.2019[is.na(contracts.2019$New.Salary) == FALSE, ]#limiting data to players who received new contracts in arbitration
+contracts.2019 = contracts.2019[is.na(contracts.2019$Prev.Salary) == FALSE, ]
 contracts.2019$Prev.WARP[is.na(contracts.2019$Prev.WARP)] = 0 #NA means they didn't play, changing this to a 0 WARP
+contracts.2019$Prev.Salary = gsub(",", "", as.character(contracts.2019$Prev.Salary)) #reformatting salaries to numbers only
+contracts.2019$Prev.Salary = as.numeric(gsub("\\$", "", as.character(contracts.2019$Prev.Salary)))
+contracts.2019$New.Salary = gsub(",", "", as.character(contracts.2019$New.Salary)) 
+contracts.2019$New.Salary = as.numeric(gsub("\\$", "", as.character(contracts.2019$New.Salary)))
 contracts.2019 = cbind(contracts.2019, "WARP" = contracts.2019$Career.WARP - contracts.2019$Prev.WARP) #adding a WARP for current season to dataframe
 contracts.2019 = contracts.2019[order(contracts.2019$Player),] #ordering alphabetically to help match dataframes later
 
+#hitter data for the 2017 season (used in conjunction with contracts.2018)
+
 hitters.2017 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Hitters 2017.csv") #2017 stats used to predict 2018 salary
-hitters.2017 = hitters.2017[c(which(hitters.2017$PA > 77)), ] #removing pitchers from hitters database
+hitters.2017 = subset(hitters.2017, PA > 77) #removing pitchers from hitters database
 colnames(hitters.2017)[1] = "Name"
 hitters.2017 = hitters.2017[order(hitters.2017$Name),]
 
+#contract data from after the 2017 season and for upcoming 2018 season
 
 contracts.2018 = read.csv("C:/Users/ryanh/Desktop/Baseball Data/Arbitration Project/Cot's 2018 arbitration salaries.csv", na.strings = c("n/a", ""))
 contracts.2018$Prev.WARP = as.numeric(as.character(contracts.2018$Prev.WARP))
 contracts.2018 = contracts.2018[is.na(contracts.2018$New.Salary) == FALSE, ]
+contracts.2018 = contracts.2018[is.na(contracts.2018$Prev.Salary) == FALSE, ]
 contracts.2018$Prev.WARP[is.na(contracts.2018$Prev.WARP)] = 0
+contracts.2018$Prev.Salary = gsub(",", "", as.character(contracts.2018$Prev.Salary)) #reformatting salaries to numbers only
+contracts.2018$Prev.Salary = as.numeric(gsub("\\$", "", as.character(contracts.2018$Prev.Salary)))
+contracts.2018$New.Salary = gsub(",", "", as.character(contracts.2018$New.Salary)) 
+contracts.2018$New.Salary = as.numeric(gsub("\\$", "", as.character(contracts.2018$New.Salary)))
 contracts.2018 = cbind(contracts.2018, "WARP" = contracts.2018$Career.WARP - contracts.2018$Prev.WARP)
 contracts.2018 = contracts.2018[order(contracts.2018$Player),]
 
@@ -35,4 +50,12 @@ arbitration.2019 = contracts.2019[, c("Player", "MLS", "Prev.WARP", "Career.WARP
 hitter.arbitration.2019 = cbind(arbitration.2019[which(as.character(arbitration.2019$Player) %in% as.character(hitters.2018$Name)), ], 
                                 hitters.2018[which(as.character(hitters.2018$Name) %in% as.character(arbitration.2019$Player)), -1])
 
-hitter.arbitration = rbind(hitter.arbitration.2018, hitter.arbitration.2019) #final dataset of all arbitration eligible hitters for 2018/2019
+hitter.arbitration = as.data.frame(rbind(hitter.arbitration.2018, hitter.arbitration.2019)) #final dataset of all arbitration eligible hitters for 2018/2019
+names(hitter.arbitration)[names(hitter.arbitration) == "WAR"] = "fWAR"
+names(hitter.arbitration)[names(hitter.arbitration) == "BB."] = "BB%"
+names(hitter.arbitration)[names(hitter.arbitration) == "K."] = "K%"
+names(hitter.arbitration)[names(hitter.arbitration) == "wRC."] = "wRC"
+hitter.arbitration$'BB%' = as.numeric(gsub("%", "", as.character(hitter.arbitration$'BB%')))
+hitter.arbitration$'K%' = as.numeric(gsub("%", "", as.character(hitter.arbitration$'K%')))
+
+hitter.arbitration = subset(hitter.arbitration, select = c(-Player, -Prev.WARP, -Career.WARP, -WARP, -Team, -playerid)) #limiting data to Fangraphs WAR estimate for the previous year due to familiarity
