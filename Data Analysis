@@ -1,0 +1,65 @@
+#####ANALYSIS######
+
+#lasso first attempt w/WAR included
+
+library(glmnet)
+library(caret)
+library(lars)
+
+ind = sample(2, nrow(hitter.arbitration), replace = T, prob = c(0.7, 0.3))
+train = hitter.arbitration[ind == 1,]
+test = hitter.arbitration[ind == 2, ]
+
+#attempt 1 using glmnet explicitly
+
+cv = cv.glmnet(x = as.matrix(train[, -3]), y = as.matrix(train[,3]))
+
+lasso.1 = glmnet(x = as.matrix(train[, -3]), y = as.matrix(train[,3]), lambda = cv$lambda.1se)
+
+#attempt 2 using caret package
+
+custom.train = trainControl(method = "repeatedcv", number = 10, repeats = 5)
+
+lasso.2 = train(New.Salary ~ ., 
+                train, 
+                method = 'glmnet', 
+                metric = "RMSE",
+                trControl = custom.train,
+                tuneGrid = expand.grid(alpha = 1, lambda = seq(10000, 100000, length = 1000))) #lambda range chosen through multiple cv attempts, RMSE minimized in this range
+
+coefs = coef(lasso.2$finalModel, lasso.2$bestTune$lambda)
+
+p.train = predict(lasso.2, train)
+rmse.train = sqrt(mean(train$New.Salary - p.train)^2)
+
+p.test = predict(lasso.2, test)
+rmse.test = sqrt(mean(test$New.Salary - p.test)^2)
+
+
+
+
+#lasso w/o fWAR and ISO (fWAR is a linear combination of many statistics and ISO is a linear combination of SLG and AVG)
+##beware, all names are identical to models above out of convenience for now
+
+hitter.arbitration.noWAR = subset(hitter.arbitration, select = c(-fWAR, -ISO))
+
+ind = sample(2, nrow(hitter.arbitration.noWAR), replace = T, prob = c(0.7, 0.3))
+train = hitter.arbitration.noWAR[ind == 1,]
+test = hitter.arbitration.noWAR[ind == 2, ]
+
+custom.train = trainControl(method = "repeatedcv", number = 10, repeats = 5)
+
+lasso.2 = train(New.Salary ~ ., 
+                train, 
+                method = 'glmnet', 
+                metric = "RMSE",
+                trControl = custom.train,
+                tuneGrid = expand.grid(alpha = 1, lambda = seq(10000, 100000, length = 1000))) #lambda range chosen through multiple cv attempts, RMSE minimized in this range
+
+coefs = coef(lasso.2$finalModel, lasso.2$bestTune$lambda)
+
+p.train = predict(lasso.2, train)
+rmse.train = sqrt(mean(train$New.Salary - p.train)^2)
+
+p.test = predict(lasso.2, test)
+rmse.test = sqrt(mean(test$New.Salary - p.test)^2)
